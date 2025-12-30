@@ -22,7 +22,7 @@ userModel.pre("save",async function(next){
   this.password = hashPass;
 })
 
-userModel.static("checkToken", async function (email, password) {
+userModel.static("checkTokenUser", async function (email, password) {
   const user = await this.findOne({ email })
   if (!user) throw new apiError(404,"No user Found","email is incorrect")
   const salt = user.salt
