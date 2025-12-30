@@ -1,6 +1,6 @@
 const JWT = require("jsonwebtoken")
 
-const secrete = process.env.JWT_SECRETE
+const secret = process.env.JWT_SECRET
 
 async function createToken(user){
   const payload = {
@@ -9,7 +9,7 @@ async function createToken(user){
     role:user.role,
     email:user.email
   }
-  const token = JWT.sign(payload,secrete,{
+  const token = JWT.sign(payload,secret,{
     expiresIn:'1d'
   })
   return token;
@@ -17,7 +17,7 @@ async function createToken(user){
 
 
 async function tokenValidate(token){
-  const payload = JWT.verify(token,secrete)
+  const payload = JWT.verify(token,secret)
   return payload;
 }
 

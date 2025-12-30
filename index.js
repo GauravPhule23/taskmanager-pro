@@ -13,6 +13,7 @@ const checkToken = require("./Midelware/auth");
 
 //Routes
 const AuthRoute = require('./Route/authRoute')
+const TaskRoute = require('./Route/taskRoute')
 
 
 //middlewares in use
@@ -30,6 +31,7 @@ app.use(checkToken("token"));
 const app = express();
 
 app.use('/api/v1/register',AuthRoute);
+app.use('/api/v1/task',TaskRoute);
 
 
 app.listen(3000,()=>{

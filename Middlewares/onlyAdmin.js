@@ -1,8 +1,9 @@
-const { Errorlog } = require("../Services/log")
+const { Errorlog, Applog } = require("../Services/log")
 
 async function onlyAdmin(req,res,next){
-  
-    if(req.user.role == "admin"){
+    Applog("Checking if the User is admin or not")
+    if(req && req.user && req.user.role == "admin"){
+      Applog("User is Admin and Acces is granted")
       
       return next()
     }else{
