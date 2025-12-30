@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const {createHmac, randomBytes} = require('crypto')
 const {createToken} = require('../Services/token')
+const apiError = require('../Services/apiError')
 
 const userModel = new mongoose.Schema({
   firstName : {type:String, required:true},
@@ -34,17 +35,17 @@ userModel.static("checkTokenUser", async function (email, password) {
   return token
 })
 
-userModel.method("isPassCorrect", async function (password){
-  const user = await this
-  if (!user) throw new Error("No user Found")
-  const salt = user.salt
-  const hashedPassword = user.password
-  const userPassword = createHmac("sha256", salt).update(password).digest("hex")
-  if (userPassword !== hashedPassword) {
-    return false
-  }
-  return true
-})
+// userModel.method("isPassCorrect", async function (password){
+//   const user = await this
+//   if (!user) throw new Error("No user Found")
+//   const salt = user.salt
+//   const hashedPassword = user.password
+//   const userPassword = createHmac("sha256", salt).update(password).digest("hex")
+//   if (userPassword !== hashedPassword) {
+//     return false
+//   }
+//   return true
+// })
 
 const User = mongoose.model("User",userModel);
 
