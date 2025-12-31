@@ -1,14 +1,14 @@
 const { tokenValidate } = require('../Services/token')
 
-function checkToken(cookieName) {
+function checkToken() {
   return async function (req, res, next) {
-    let tokenValue = await req.cookies[cookieName]
-    if (!tokenValue) {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        tokenValue = authHeader.split(" ")[1];
-      }
+    let tokenValue = null
+    // console.log(req.headers)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      tokenValue = authHeader.split(" ")[1];
     }
+// console.log(tokenValue)
     if (!tokenValue) {
       return next()
     }
@@ -25,4 +25,4 @@ function checkToken(cookieName) {
 
 }
 
-module.exports=checkToken;
+module.exports = checkToken;

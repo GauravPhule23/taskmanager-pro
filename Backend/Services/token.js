@@ -9,6 +9,7 @@ async function createToken(user){
     role:user.role,
     email:user.email
   }
+  
   const token = JWT.sign(payload,secret,{
     expiresIn:'1d'
   })
@@ -16,7 +17,7 @@ async function createToken(user){
 }
 
 
-async function tokenValidate(token){
+function tokenValidate(token){
   const payload = JWT.verify(token,secret)
   return payload;
 }

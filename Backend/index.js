@@ -9,7 +9,9 @@ const xssClean = require('xss-clean');
 const conectionDatabase = require('./connection')
 //MiddleWares
 const cookieParser = require("cookie-parser");
-const checkToken = require("./Midelware/auth");
+const checkToken = require("./Middlewares/auth");
+//cors
+const cors = require("cors");
 
 //Routes
 const AuthRoute = require('./Route/authRoute')
@@ -18,20 +20,21 @@ const cleanTask = require('./Services/cleanTask');
 
 const app = express();
 
+app.use(cors());
+
 //middlewares in use
 app.use(express.json());
 app.use(helmet()); // used to secure headers
-app.use(xssClean()); // remove script tags and xss payloads
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(checkToken("token"));
+app.use(checkToken());
 
 
 
 
 
 
-app.use('/api/v1/register', AuthRoute);
+app.use('/api/v1/auth', AuthRoute);
 app.use('/api/v1/task', TaskRoute);
 
 const TIME_INTERVAL = 5 * 60 * 60 * 1000;

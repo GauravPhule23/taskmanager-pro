@@ -13,16 +13,17 @@ async function register(req, res) {
       res.status(400).json(new apiError(400, "Data is Incomplete..."));
       return
     }
-
+    
     if(!lastName){
       lastName = null;
     }
-
+    
     if(await User.findOne({email})){
       Applog("User Already exists")
       return res.status(409).json(new apiError(409,"User Already exists"))
     }
-
+    
+    
     await User.create({
       firstName,
       lastName,
@@ -35,14 +36,14 @@ async function register(req, res) {
 
     const token = await User.checkTokenUser(email,password);
     Applog("User logged in too")
-    return res.status(201).cookie('token',token,{
+    res.status(201).cookie('token',token,{
       maxAge:24*60*60*1000,
       httpOnly:true
-    }).json(new apiResponse(201,"user created and logged in",token));
+    }).json(new apiResponse(201,"user created and logged in",{'token':token}));
     
-
+    return
   } catch (error) {
-    Errorlog(error)
+    Errorlog("This error is from register auth "+error)
     res.status(500).json(new apiError(500, "Error occured in registration", error));
     return
   }
@@ -63,11 +64,11 @@ async function signin(req,res){
     Applog("Checking Password")
     const token = await User.checkTokenUser(email,password);
     Applog("User Logged-in")
-    return res.status(200).cookie('token',token,{
+    res.status(200).cookie('token',token,{
       maxAge:24*60*60*1000,
       httpOnly:true
     }).json(new apiResponse(200,"user logged in",token));
-    
+    return 
   } catch (error) {
     Errorlog(error)
     res.status(500).json(new apiError(500, "Error occured in Signing in", error));

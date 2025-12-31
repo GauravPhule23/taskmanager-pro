@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Sign Up - Task Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="container">
+    <h2>Create Account</h2>
+    <form id="signupForm">
+      <input type="text" id="firstName" placeholder="First Name" required>
+      <input type="text" id="lastName" placeholder="Last Name" required>
+      <input type="email" id="email" placeholder="Email Address" required>
+      <input type="password" id="password" placeholder="Password (min 6 chars)" required>
+
+      <select id="role" style="width: 96%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <button type="button" onclick="handleSignup()">Sign Up</button>
+    </form>
+    <a href="signin.html" class="link">Already have an account? Sign In</a>
+    <p id="message" style="color: red;"></p>
+  </div>
+
+  <script>
+    // ✅ Make this a standalone function
+    async function handleSignup() {
+        // No need for e.preventDefault() because it's not a submit button anymore!
+        
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const role = document.getElementById('role').value;
+
+        // Basic Validation
+        if (!email || !password) {
+            alert("Please fill in all fields");
+            return;
+        }
+
+        try {
+            console.log("Sending request...");
+            
+            const res = await fetch('http://localhost:3000/api/v1/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firstName, lastName, email, password, role })
+            });
+
+            const data = await res.json();
+            console.log("Response:", data);
+
+            if (res.ok) {
+                // Check where the token is (based on your previous logs)
+                // Use data.token OR data.data (whichever one had the long string)
+                const finalToken = data.data.token ; 
+
+                if (finalToken) {
+                    localStorage.setItem('token', finalToken);
+                    console.log("Token saved. Redirecting now...");
+                    
+                    // ✅ Force the redirect
+                    window.location.replace('dashboard.html'); 
+                } else {
+                    alert("Signup success, but no token returned.");
+                    window.location.href = 'signin.html';
+                }
+            } else {
+                document.getElementById('message').innerText = data.message || 'Error registering';
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Server Error");
+        }
+    }
+</script>
+</body>
+
+</html>

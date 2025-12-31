@@ -9,20 +9,22 @@ const userModel = new mongoose.Schema({
   lastName : {type:String},
   email:{type:String,required:true,unique:true},
   password : {type:String,required:true},
-  salt : {type:String,required:true},
+  salt : {type:String},
   role:{type:String,enum:["user","admin"], default:"user"},
 
 },{Timestamps:true});
 
-userModel.pre("save",async function(next){
+userModel.pre("save",async function(){
+  console.log("inside pre save")
   Applog("Hashing password")
   const user = this
-  if(!user.isModified('password')) return
+  if(!user.isModified('password')) return 
   const salt = randomBytes(21).toString();
   const hashPass = createHmac("sha256",salt).update(user.password).digest('hex')
 
   this.salt = salt;
   this.password = hashPass;
+  
 })
 
 userModel.static("checkTokenUser", async function (email, password) {

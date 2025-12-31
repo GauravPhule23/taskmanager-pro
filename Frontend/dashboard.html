@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Task Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* --- General Layout --- */
+        body { 
+            font-family: sans-serif; 
+            background-color: #f4f4f4; 
+            margin-top: 100px;
+            padding: 50px 20px; 
+            box-sizing: border-box;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+        }
+        
+        /* --- Inputs & Buttons --- */
+        input, select, button { padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        button { cursor: pointer; background-color: #007bff; color: white; border: none; }
+        button:hover { opacity: 0.9; }
+
+        /* --- Action Buttons --- */
+        .btn-edit { 
+            background-color: #17a2b8; 
+            color: white; 
+            padding: 5px 15px;
+            font-size: 0.9em;
+        }
+        
+        /* FULL WIDTH DELETE BUTTON STYLE */
+        .delete-btn { 
+            background-color: #dc3545; 
+            width: 100%;      
+            display: block;   
+            margin-top: 15px; 
+            padding: 12px;
+            font-weight: bold;
+            border-radius: 0 0 4px 4px; 
+        }
+        
+        /* --- Filters --- */
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .controls input, .controls select { flex: 1; margin: 0; }
+
+        /* --- Task Item Card Structure --- */
+        .task-item { 
+            border: 1px solid #eee; 
+            border-radius: 8px;
+            padding: 15px; 
+            margin-bottom: 15px; 
+            background-color: white;
+            display: flex;
+            flex-direction: column; 
+        }
+
+        .task-row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .status-badge { padding: 5px 10px; border-radius: 12px; font-size: 0.85em; font-weight: bold; }
+
+        /* --- Modal Styles --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 100; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0, 0, 0, 0.4); 
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto; 
+            padding: 20px; 
+            border: 1px solid #888; 
+            width: 90%; max-width: 400px;
+            border-radius: 8px;
+        }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="dashboard-container">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <h2 id="welcomeMsg" style="margin:0;">My Tasks</h2>
+            <button onclick="logout()" style="width:auto; background:#6c757d;">Logout</button>
+        </div>
+
+        <div id="addTaskSection" style="background:#f8f9fa; padding:15px; border-radius:5px; margin-bottom:20px; border:1px solid #ddd;">
+            <h4 style="margin-top:0;">Create New Task</h4>
+            <input type="text" id="taskInput" placeholder="Task Name (e.g. Fix Server)" style="width: 100%; box-sizing: border-box;" required>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label style="font-size: 0.9em;">Deadline:</label>
+                <input type="datetime-local" id="completionTimeInput" style="flex: 1;" required>
+            </div>
+            <button onclick="addTask()" style="width: 100%; margin-top: 10px;">+ Add New Task</button>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Search tasks..." onkeyup="applyFilters()">
+            <select id="filterSelect" onchange="applyFilters()">
+                <option value="all">All Status</option>
+                <option value="true">Completed</option>
+                <option value="false">Pending</option>
+                <option value="failed">Failed</option>
+            </select>
+        </div>
+
+        <div id="taskList">
+            <p style="text-align:center; color: #666;">Loading tasks...</p>
+        </div>
+        <p id="errorMsg" style="color:red; text-align: center;"></p>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3 style="margin-top:0;">Edit Task</h3>
+            
+            <input type="hidden" id="editTaskId">
+            
+            <label>Task Name:</label>
+            <input type="text" id="editTaskInput" style="width: 100%; box-sizing: border-box;">
+            
+            <label>Completion Time:</label>
+            <input type="datetime-local" id="editTimeInput" style="width: 100%; box-sizing: border-box;">
+            
+            <label>Status:</label>
+            <select id="editStatusInput" style="width: 100%; box-sizing: border-box;">
+                <option value="false">Pending</option>
+                <option value="true">Completed</option>
+            </select>
+
+            <button onclick="submitUpdate()" style="background:#28a745; width:100%; margin-top: 15px;">Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            window.location.href = 'signin.html';
+        }
+
+        // --- 1. UTILITIES ---
+
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        const userPayload = parseJwt(token);
+        const userRole = userPayload?.role || 'user'; 
+
+        const BASE_URL = 'http://localhost:3000/api/v1/task';
+        const FETCH_URL = userRole === 'admin' ? `${BASE_URL}/admin/all` : `${BASE_URL}/all`;
+
+        document.getElementById('welcomeMsg').innerText = userRole === 'admin' ? 'Admin Dashboard' : 'My Tasks';
+
+        let allTasks = [];
+
+        // --- 2. CORE FUNCTIONS ---
+
+        async function fetchTasks() {
+            try {
+                const res = await fetch(FETCH_URL, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if(!res.ok) throw new Error("Failed to fetch");
+
+                const data = await res.json();
+                allTasks = data.data; 
+
+                // --- SORTING LOGIC: Ascending Order (Earliest Date First) ---
+                allTasks.sort((a, b) => new Date(a.completionTime) - new Date(b.completionTime));
+
+                renderTasks(allTasks);
+            } catch (err) {
+                document.getElementById('errorMsg').innerText = 'Failed to load tasks.';
+                console.error(err);
+            }
+        }
+
+        function renderTasks(tasksToRender) {
+            const list = document.getElementById('taskList');
+            list.innerHTML = '';
+
+            if(tasksToRender.length === 0) {
+                list.innerHTML = '<p style="padding:15px; text-align:center;">No tasks found.</p>';
+                return;
+            }
+
+            tasksToRender.forEach(t => {
+                const dateStr = t.completionTime ? new Date(t.completionTime).toLocaleString() : 'No Date';
+                
+                const isCompleted = t.completed === true || t.completed === "true";
+                
+                let inTimeVal = t.inTime;
+                if (inTimeVal === "true") inTimeVal = true;
+                if (inTimeVal === "false") inTimeVal = false;
+
+                let statusColor, statusText, statusTextColor, bgColor;
+                let canDelete = true; 
+
+                // --- STATUS PRIORITY LOGIC ---
+                // 1. If inTime is explicitly false, it is FAILED
+                if (inTimeVal === false) {
+                    statusText = 'Failed to complete';
+                    statusColor = '#6c757d'; 
+                    statusTextColor = 'white';
+                    bgColor = '#f2f2f2'; 
+                    canDelete = false;   
+                } 
+                // 2. If not failed, check if Completed
+                else if (isCompleted) {
+                    statusText = 'Completed';
+                    statusColor = '#28a745'; 
+                    statusTextColor = 'white';
+                    bgColor = 'white';
+                } 
+                // 3. Otherwise Pending
+                else {
+                    statusText = 'Pending';
+                    statusColor = '#ffc107'; 
+                    statusTextColor = 'black';
+                    bgColor = 'white';
+                }
+
+                const div = document.createElement('div');
+                div.className = 'task-item';
+                div.style.backgroundColor = bgColor; 
+                
+                // --- DISPLAY LOGIC FOR ADMIN ---
+                let adminUserInfo = '';
+                if (userRole === 'admin') {
+                    const firstName = t.user?.firstName || 'Unknown';
+                    const lastName = t.user?.lastName || ''; 
+                    const email = t.user?.email || 'No Email';
+                    
+                    adminUserInfo = `<br><small style="color:#007bff; font-weight:bold;">User: ${firstName} ${lastName} (${email})</small>`;
+                }
+
+                // Render Structure
+                div.innerHTML = `
+                    <div class="task-row-top">
+                        <div style="flex:1;">
+                            <strong style="font-size:1.1em;">${t.task}</strong> 
+                            ${adminUserInfo}
+                            <br>
+                            <small style="color:#555;">Due: ${dateStr}</small>
+                        </div>
+                        
+                        <div style="text-align:right;">
+                            <span class="status-badge" style="background:${statusColor}; color:${statusTextColor};">
+                                ${statusText}
+                            </span>
+                            <br><br>
+                            ${userRole !== 'admin' ? `
+                                <button onclick='openEditModal(${JSON.stringify(t).replace(/'/g, "&apos;")})' class="btn-edit">Edit</button>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    ${userRole !== 'admin' ? `
+                        <button onclick="deleteTask('${t._id}')" 
+                                class="delete-btn" 
+                                ${!canDelete ? 'disabled style="background:grey; cursor:not-allowed; opacity:0.5;"' : ''}>
+                                Delete Task
+                        </button>
+                    ` : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // --- 3. FILTER LOGIC ---
+
+        function applyFilters() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const filterStatus = document.getElementById('filterSelect').value;
+
+            const filtered = allTasks.filter(t => {
+                const matchesSearch = t.task.toLowerCase().includes(searchText);
+                const isCompleted = t.completed === true || t.completed === "true";
+                let inTimeVal = t.inTime;
+                if (inTimeVal === "true") inTimeVal = true;
+                if (inTimeVal === "false") inTimeVal = false;
+
+                let matchesStatus = true;
+                
+                if (filterStatus === 'failed') {
+                    matchesStatus = (inTimeVal === false);
+                } else if (filterStatus === 'true') {
+                    matchesStatus = isCompleted && (inTimeVal !== false);
+                } else if (filterStatus === 'false') {
+                    matchesStatus = !isCompleted && (inTimeVal !== false); 
+                }
+                
+                return matchesSearch && matchesStatus;
+            });
+            renderTasks(filtered);
+        }
+
+        // --- 4. CRUD OPERATIONS ---
+
+        async function addTask() {
+            const taskName = document.getElementById('taskInput').value;
+            const completionTime = document.getElementById('completionTimeInput').value;
+
+            if(!taskName || !completionTime) return alert("All fields required");
+
+            try {
+                const res = await fetch(`${BASE_URL}/create`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                        task: taskName, 
+                        completionTime: completionTime,
+                        completed: false,
+                        inTime: true
+                    })
+                });
+
+                if (res.ok) {
+                    document.getElementById('taskInput').value = '';
+                    fetchTasks(); 
+                } else {
+                    const d = await res.json();
+                    alert(d.message || "Error creating task");
+                }
+            } catch (err) {
+                alert("Server Error");
+            }
+        }
+
+        async function deleteTask(id) {
+            if(!confirm("Delete this task?")) return;
+            try {
+                const res = await fetch(`${BASE_URL}/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if(res.ok) fetchTasks(); 
+                else alert("Failed to delete");
+            } catch (err) { alert("Could not delete"); }
+        }
+
+        // --- 5. EDIT/UPDATE LOGIC ---
+
+        function openEditModal(task) {
+            document.getElementById('editModal').style.display = "block";
+            document.getElementById('editTaskId').value = task._id;
+            document.getElementById('editTaskInput').value = task.task;
+            
+            if(task.completionTime) {
+                const date = new Date(task.completionTime);
+                date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); 
+                document.getElementById('editTimeInput').value = date.toISOString().slice(0, 16);
+            }
+
+            document.getElementById('editStatusInput').value = task.completed ? "true" : "false";
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = "none";
+        }
+
+        async function submitUpdate() {
+            const id = document.getElementById('editTaskId').value;
+            const taskName = document.getElementById('editTaskInput').value;
+            const completionTime = document.getElementById('editTimeInput').value;
+            const completed = document.getElementById('editStatusInput').value === "true";
+
+            try {
+                const res = await fetch(`${BASE_URL}/update/${id}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                        id: id, 
+                        task: taskName, 
+                        completionTime: completionTime,
+                        completed: completed
+                    })
+                });
+
+                if (res.ok) {
+                    closeModal();
+                    fetchTasks();
+                } else {
+                    const d = await res.json();
+                    alert(d.message || "Update failed");
+                }
+            } catch (err) {
+                alert("Server Error during update");
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'signin.html';
+        }
+
+        // --- 6. INIT ---
+        
+        fetchTasks();
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+    </script>
+</body>
+</html>

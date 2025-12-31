@@ -23,10 +23,15 @@ const signinValidation = [
 ];
 
 const validate = (req, res, next) => {
+  console.log("middlewar1")
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+  if(!res.headersSent){
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
   }
+  console.log("inside validate")
   next();
 };
 

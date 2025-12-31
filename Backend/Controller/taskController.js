@@ -1,8 +1,8 @@
-const Task = require('../../Model/task');
-const User = require('../../Model/user');
-const apiError = require('../../Services/apiError')
-const apiResponse = require('../../Services/apiResponse')
-const {Applog,Errorlog} = require('../../Services/log')
+const Task = require('../Model/task');
+const User = require('../Model/user');
+const apiError = require('../Services/apiError')
+const apiResponse = require('../Services/apiResponse')
+const {Applog,Errorlog} = require('../Services/log')
 
 async function createTask(req,res){
   try {
@@ -43,10 +43,11 @@ async function getTaskUser(req,res){
     Applog("Checking if the user exists")
     if(!await User.findById(req.user._id)){
       Applog("User not found")
-      return res.status(401).json(new apiError(401,"User Not Found"))
+      res.status(401).json(new apiError(401,"User Not Found"))
+      return 
     }
 
-    const status = req.query;
+    const {status} = req.query;
     let query =  {user:req.user._id}
 
     switch(status){
@@ -79,7 +80,7 @@ async function getTaskUser(req,res){
 
 async function updateTask(req,res){
   try {
-    const id = req.params;
+    const id = req.params.id;
 
     Applog("Checking if the user exists")
     if(!await User.findById(req.user._id)){
@@ -99,7 +100,7 @@ async function updateTask(req,res){
     if(task) updates.task = task;
     if(completed){
       updates.completed = completed
-      if(taskFetched.completionTime >= new Date.now()){
+      if(taskFetched.completionTime >= new Date()){
         updates.inTime=true
       }else{
         updates.inTime=false
@@ -109,7 +110,7 @@ async function updateTask(req,res){
       updates.completionTime=new Date(completionTime)
     }
     Applog("Updating the task data")
-    await Task.findByOneAndUpdate({
+    await Task.findByIdAndUpdate({
       _id:id,
       user:req.user._id
     },{
@@ -131,7 +132,7 @@ async function updateTask(req,res){
 
 async function deleteTask(req,res){
   try{
-    const id = req.params;
+    const id = req.params.id;
 
     Applog("Checking if the user exists")
     if(!await User.findById(req.user._id)){
@@ -185,7 +186,7 @@ async function getTaskAdmin(req,res){
     }
 
     Applog("Getting all task's of User....")
-    const taskData = await Task.find(query);
+    const taskData = await Task.find(query).populate("user").select("-password -salt -role");
     Applog("Task's got returning")
     return res.status(200).json(new apiResponse(200,"tasks got",taskData))
 
