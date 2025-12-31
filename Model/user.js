@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const {createHmac, randomBytes} = require('crypto')
 const {createToken} = require('../Services/token')
-const apiError = require('../Services/apiError')
+const apiError = require('../Services/apiError');
+const { Applog } = require('../Services/log');
 
 const userModel = new mongoose.Schema({
   firstName : {type:String, required:true},
@@ -14,6 +15,7 @@ const userModel = new mongoose.Schema({
 },{Timestamps:true});
 
 userModel.pre("save",async function(next){
+  Applog("Hashing password")
   const user = this
   if(!user.isModified('password')) return
   const salt = randomBytes(21).toString();
@@ -29,9 +31,12 @@ userModel.static("checkTokenUser", async function (email, password) {
   const salt = user.salt
   const hashedPassword = user.password
   const userPassword = createHmac("sha256", salt).update(password).digest("hex")
-  if (userPassword !== hashedPassword) throw new apiError(404,"Incorrect password","Incorrect pass or email")
+  if (userPassword !== hashedPassword){ 
+    Applog("Password Incorrect or Email")
+    throw new apiError(404,"Incorrect password","Incorrect pass or email")
+  }
   const token = await createToken(user);
-
+  Applog("Password Verified . .")
   return token
 })
 

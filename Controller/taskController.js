@@ -8,14 +8,14 @@ async function createTask(req,res){
   try {
     Applog("Checking if the user exists")
     if(!await User.findById(req.user._id)){
-      Errorlog("User not found")
+      Applog("User not found")
       return res.status(401).json(new apiError(401,"User Not Found"))
     }
     Applog("Task-Creation started...")
     const {task, completionTime} = req.body;
 
     if(!task || !completionTime){
-      Errorlog("Incomplete Data request Rejected")
+      Applog("Incomplete Data request Rejected")
       res.status(400).json(new apiError(400,"Incomplete Data"))
       return
     }
@@ -42,7 +42,7 @@ async function getTaskUser(req,res){
   try {
     Applog("Checking if the user exists")
     if(!await User.findById(req.user._id)){
-      Errorlog("User not found")
+      Applog("User not found")
       return res.status(401).json(new apiError(401,"User Not Found"))
     }
 
@@ -83,7 +83,7 @@ async function updateTask(req,res){
 
     Applog("Checking if the user exists")
     if(!await User.findById(req.user._id)){
-      Errorlog("User not found")
+      Applog("User not found")
       return res.status(401).json(new apiError(401,"User Not Found"))
     }
 
@@ -91,7 +91,7 @@ async function updateTask(req,res){
     Applog("Checking whether task exists and user is authorized or not")
     const taskFetched=await Task.findOne({_id:id,user:req.user._id})
     if(!taskFetched){
-      Errorlog("User is unauthorized or task does not exists")
+      Applog("User is unauthorized or task does not exists")
       return res.status(404).json(new apiError(404,"No Task Found or unauthorized"))
     }
 
@@ -135,14 +135,14 @@ async function deleteTask(req,res){
 
     Applog("Checking if the user exists")
     if(!await User.findById(req.user._id)){
-      Errorlog("User not found")
+      Applog("User not found")
       return res.status(401).json(new apiError(401,"User Not Found"))
     }
     Applog("Checking if Task is valid or not")
     const task = await Task.findOne({_id:id,user:req.user._id})
 
     if(!task){
-      Errorlog("Unauthorized User or Task not available")
+      Applog("Unauthorized User or Task not available")
       return res.status(401).json(new apiError(401,"Unauthorized User or Task not available"))
     }
 
@@ -162,7 +162,7 @@ async function getTaskAdmin(req,res){
     Applog("Checking if the user exists")
     const user = await User.findById(req.user._id)
     if(!user || user.role!="admin"){
-      Errorlog("User not found")
+      Applog("User not found")
       return res.status(401).json(new apiError(401,"User Not Found"))
     }
 

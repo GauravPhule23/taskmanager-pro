@@ -9,7 +9,7 @@ async function register(req, res) {
     Applog("New User Registeration.....")
     let { firstName, lastName, email, password, role } = req.body;
     if (!firstName || !email || !password || !role) {
-      Errorlog("Data is Incomplete...")
+      Applog("Data is Incomplete...")
       res.status(400).json(new apiError(400, "Data is Incomplete..."));
       return
     }
@@ -19,7 +19,7 @@ async function register(req, res) {
     }
 
     if(await User.findOne({email})){
-      Errorlog("User Already exists")
+      Applog("User Already exists")
       return res.status(409).json(new apiError(409,"User Already exists"))
     }
 
@@ -56,12 +56,13 @@ async function signin(req,res){
     const {email,password} = req.body;
 
     if(!email || !password){
-      Errorlog("Data is Incomplete...")
+      Applog("Data is Incomplete...")
       res.status(400).json(new apiError(400, "Data is Incomplete..."));
       return
     }
-
+    Applog("Checking Password")
     const token = await User.checkTokenUser(email,password);
+    Applog("User Logged-in")
     return res.status(200).cookie('token',token,{
       maxAge:24*60*60*1000,
       httpOnly:true

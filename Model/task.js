@@ -2,9 +2,9 @@ const mongoose = require('mongoose')
 
 const taskModel = new mongoose.Schema({
   task : {type:String, required:true},
-  completed : {type:String,enum:[true,false],default:false},
+  completed : {type:Boolean,enum:[true,false],default:false},
   completionTime : {type : Date, required : true},
-  inTime:{type:String,enum:[true,false,null], default:null},
+  inTime:{type:Boolean,enum:[true,false,null], default:null},
   user : {type:mongoose.Schema.Types.ObjectId,required:true, ref:"User"},
   
 

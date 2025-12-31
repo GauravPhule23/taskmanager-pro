@@ -2,7 +2,7 @@
 require('dotenv').config();
 //intializing app
 const express = require("express");
-const {Applog} = require('./Services/log')
+const { Applog } = require('./Services/log')
 const helmet = require('helmet')
 const xssClean = require('xss-clean');
 // db Connection
@@ -13,8 +13,10 @@ const checkToken = require("./Midelware/auth");
 
 //Routes
 const AuthRoute = require('./Route/authRoute')
-const TaskRoute = require('./Route/taskRoute')
+const TaskRoute = require('./Route/taskRoute');
+const cleanTask = require('./Services/cleanTask');
 
+const app = express();
 
 //middlewares in use
 app.use(express.json());
@@ -28,13 +30,39 @@ app.use(checkToken("token"));
 
 
 
-const app = express();
 
-app.use('/api/v1/register',AuthRoute);
-app.use('/api/v1/task',TaskRoute);
+app.use('/api/v1/register', AuthRoute);
+app.use('/api/v1/task', TaskRoute);
 
+const TIME_INTERVAL = 5 * 60 * 60 * 1000;
+let cleanInt = null;
 
-app.listen(3000,()=>{
+conectionDatabase();
+let server = app.listen(3000, () => {
   Applog("Server Started")
-  conectionDatabase();
+  cleanTask();
+  cleanInt = setInterval(cleanTask, TIME_INTERVAL);
 })
+
+
+
+// -------- Gracefull ShutDown ------------
+
+const gracefulShutdown = () => {
+  Applog("......Server Shutting Down.......")
+  if (cleanInt) {
+    clearInterval(cleanInt);
+    Applog("Task Cleaning interval Cleared")
+  }
+  if (server) {
+    server.close(() => {
+      Applog("Http server closed.")
+      process.exit(0);
+    })
+
+  } else {
+    process.exit(0)
+  }
+}
+process.on('SIGINT', gracefulShutdown);  
+process.on('SIGTERM', gracefulShutdown); 
