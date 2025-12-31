@@ -1,8 +1,8 @@
-const Task = require('../Model/task');
-const User = require('../Model/user');
-const apiError = require('../Services/apiError')
-const apiResponse = require('../Services/apiResponse')
-const {Applog,Errorlog} = require('../Services/log')
+const Task = require('../../Model/task');
+const User = require('../../Model/user');
+const apiError = require('../../Services/apiError')
+const apiResponse = require('../../Services/apiResponse')
+const {Applog,Errorlog} = require('../../Services/log')
 
 async function createTask(req,res){
   try {
