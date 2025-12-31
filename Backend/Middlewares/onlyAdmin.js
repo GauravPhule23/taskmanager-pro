@@ -1,4 +1,5 @@
 const { Errorlog, Applog } = require("../Services/log")
+const apiError = require("../Services/apiError")
 
 async function onlyAdmin(req,res,next){
     Applog("Checking if the User is admin or not")

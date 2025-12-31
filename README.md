@@ -32,6 +32,9 @@ A robust, full-stack Task Management application designed to help users organize
 **Database:**
 * MongoDB (Mongoose ODM)
 
+**Postman Api Docs Public Link :**
+* https://documenter.getpostman.com/view/32715412/2sBXVbJuK9
+
 # Scalability Note
 
 * Stateless Authentication: Uses JSON Web Tokens (JWT), which allows the backend to scale horizontally on any number of server instances, without managing session stickiness.
