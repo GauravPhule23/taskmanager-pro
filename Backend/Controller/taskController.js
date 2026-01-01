@@ -2,64 +2,64 @@ const Task = require('../Model/task');
 const User = require('../Model/user');
 const apiError = require('../Services/apiError')
 const apiResponse = require('../Services/apiResponse')
-const {Applog,Errorlog} = require('../Services/log')
+const { Applog, Errorlog } = require('../Services/log')
 
-async function createTask(req,res){
+async function createTask(req, res) {
   try {
     Applog("Checking if the user exists")
-    if(!await User.findById(req.user._id)){
+    if (!await User.findById(req.user._id)) {
       Applog("User not found")
-      return res.status(401).json(new apiError(401,"User Not Found"))
+      return res.status(401).json(new apiError(401, "User Not Found"))
     }
     Applog("Task-Creation started...")
-    const {task, completionTime} = req.body;
+    const { task, completionTime } = req.body;
 
-    if(!task || !completionTime){
+    if (!task || !completionTime) {
       Applog("Incomplete Data request Rejected")
-      res.status(400).json(new apiError(400,"Incomplete Data"))
+      res.status(400).json(new apiError(400, "Incomplete Data"))
       return
     }
 
     const dueDate = completionTime ? new Date(completionTime) : null
 
-    const obj={
+    const obj = {
       task,
-      completionTime : dueDate,
-      user:req.user._id
+      completionTime: dueDate,
+      user: req.user._id
     }
 
     await Task.create(obj);
     Applog("Task created Succesfully")
-    const taskData = await Task.find({user:req.user._id})
-    return res.status(201).json(new apiResponse(201,"Task created Succesfully",taskData))
+    const taskData = await Task.find({ user: req.user._id })
+    return res.status(201).json(new apiResponse(201, "Task created Succesfully", taskData))
   } catch (error) {
     Errorlog(error)
-    return res.status(500).json(new apiError(500,"error in create task",error))
+    return res.status(500).json(new apiError(500, "error in create task", error))
   }
 }
 
-async function getTaskUser(req,res){
+async function getTaskUser(req, res) {
   try {
     Applog("Checking if the user exists")
-    if(!await User.findById(req.user._id)){
+    if (!await User.findById(req.user._id)) {
       Applog("User not found")
-      res.status(401).json(new apiError(401,"User Not Found"))
-      return 
+      res.status(401).json(new apiError(401, "User Not Found"))
+      return
     }
 
-    const {status} = req.query;
-    let query =  {user:req.user._id}
+    const { status } = req.query;
+    let query = { user: req.user._id }
 
-    switch(status){
+    switch (status) {
       case "completed":
-        query.completed=true
+        query.completed = true
         break;
       case "pending":
-        query.completed=false
+        query.completed = false
         break;
       case "completed-intime":
-        query.completed=true
-        query.inTime=true
+        query.completed = true
+        query.inTime = true
         break;
       default:
         break;
@@ -68,118 +68,129 @@ async function getTaskUser(req,res){
     Applog("Getting all task's of User....")
     const taskData = await Task.find(query);
     Applog("Task's got returning")
-    return res.status(200).json(new apiResponse(200,"tasks got",taskData))
+    return res.status(200).json(new apiResponse(200, "tasks got", taskData))
 
 
-     
+
   } catch (error) {
     Errorlog(error)
-    return res.status(500).json(new apiError(500,"error in getTaskUser",error))
+    return res.status(500).json(new apiError(500, "error in getTaskUser", error))
   }
 }
 
-async function updateTask(req,res){
+async function updateTask(req, res) {
   try {
     const id = req.params.id;
 
     Applog("Checking if the user exists")
-    if(!await User.findById(req.user._id)){
+    if (!await User.findById(req.user._id)) {
       Applog("User not found")
-      return res.status(401).json(new apiError(401,"User Not Found"))
+      return res.status(401).json(new apiError(401, "User Not Found"))
     }
 
-    const {task,completed,completionTime} = req.body;
+    const { task, completed, completionTime } = req.body;
     Applog("Checking whether task exists and user is authorized or not")
-    const taskFetched=await Task.findOne({_id:id,user:req.user._id})
-    if(!taskFetched){
-      Applog("User is unauthorized or task does not exists")
-      return res.status(404).json(new apiError(404,"No Task Found or unauthorized"))
+    const taskFetched = await Task.findOne({ _id: id })
+    if (taskFetched) {
+      if (taskFetched.user != req.user._id && req.user.role != 'admin') {
+        Applog("User is unauthorized")
+        return res.status(404).json(new apiError(404, "unauthorized"))
+      }
+    } else {
+      Applog("requested task is not available")
+      return res.status(404).json(new apiError(404, "No Task Found"))
     }
 
     let updates = {};
-    if(task) updates.task = task;
-    if(completed){
+    if (task) updates.task = task;
+    if (completed) {
       updates.completed = completed
-      if(taskFetched.completionTime >= new Date()){
-        updates.inTime=true
-      }else{
-        updates.inTime=false
+      if (taskFetched.completionTime >= new Date()) {
+        updates.inTime = true
+      } else {
+        updates.inTime = false
       }
     }
-    if(completionTime){
-      updates.completionTime=new Date(completionTime)
+    if (completionTime) {
+      updates.completionTime = new Date(completionTime)
     }
     Applog("Updating the task data")
     await Task.findByIdAndUpdate({
-      _id:id,
-      user:req.user._id
-    },{
-      $set : updates
-    },{runValidators:true});
+      _id: id,
+      user: req.user._id
+    }, {
+      $set: updates
+    }, { runValidators: true });
 
     const taskData = await Task.findById(id)
     Applog("Updation completed")
 
-    return res.status(200).json(new apiResponse(200,"Data Updated",taskData))
+    return res.status(200).json(new apiResponse(200, "Data Updated", taskData))
 
-    
+
 
   } catch (error) {
     Errorlog(error)
-    return res.status(500).json(new apiError(500,"error in updateTask",error))
+    return res.status(500).json(new apiError(500, "error in updateTask", error))
   }
 }
 
-async function deleteTask(req,res){
-  try{
+async function deleteTask(req, res) {
+  try {
     const id = req.params.id;
 
     Applog("Checking if the user exists")
-    if(!await User.findById(req.user._id)){
+    if (!await User.findById(req.user._id)) {
       Applog("User not found")
-      return res.status(401).json(new apiError(401,"User Not Found"))
+      return res.status(401).json(new apiError(401, "User Not Found"))
     }
     Applog("Checking if Task is valid or not")
-    const task = await Task.findOne({_id:id,user:req.user._id})
+    const task = await Task.findOne({ _id: id })
 
-    if(!task){
-      Applog("Unauthorized User or Task not available")
-      return res.status(401).json(new apiError(401,"Unauthorized User or Task not available"))
+    if (task) {
+      if (task.user != req.user._id && req.user.role != 'admin') {
+        Applog("Unauthorized User")
+        return res.status(401).json(new apiError(401, "Unauthorized User"))
+      }
+    }else{
+      Applog("Task not available")
+      return res.status(401).json(new apiError(401, "Task not available"))
+
     }
 
     await Task.findByIdAndDelete(id);
     Applog("Task deleted Succesfully")
-    return res.status(200).json(new apiResponse(200,"Task Deleted"))
+    return res.status(200).json(new apiResponse(200, "Task Deleted"))
 
-  }catch(error){
+  } catch (error) {
     Errorlog(error)
-    return res.status(500).json(new apiError(500,"Error in deletTask",error))
+    return res.status(500).json(new apiError(500, "Error in deletTask", error))
   }
 
 }
 
-async function getTaskAdmin(req,res){
+async function getTaskAdmin(req, res) {
   try {
     Applog("Checking if the user exists")
     const user = await User.findById(req.user._id)
-    if(!user || user.role!="admin"){
+    if (!user || user.role != "admin") {
       Applog("User not found")
-      return res.status(401).json(new apiError(401,"User Not Found"))
+      return res.status(401).json(new apiError(401, "User Not Found"))
     }
 
     const status = req.query;
-    let query =  {}
+    let query = {}
 
-    switch(status){
+    switch (status) {
       case "completed":
-        query.completed=true
+        query.completed = true
         break;
       case "pending":
-        query.completed=false
+        query.completed = false
         break;
       case "completed-intime":
-        query.completed=true
-        query.inTime=true
+        query.completed = true
+        query.inTime = true
         break;
       default:
         break;
@@ -188,18 +199,18 @@ async function getTaskAdmin(req,res){
     Applog("Getting all task's of User....")
     const taskData = await Task.find(query).populate("user").select("-password -salt -role");
     Applog("Task's got returning")
-    return res.status(200).json(new apiResponse(200,"tasks got",taskData))
+    return res.status(200).json(new apiResponse(200, "tasks got", taskData))
 
 
-     
+
   } catch (error) {
     Errorlog(error)
-    return res.status(500).json(new apiError(500,"error in getTaskUser",error))
+    return res.status(500).json(new apiError(500, "error in getTaskUser", error))
   }
 }
 
 
-module.exports={
+module.exports = {
   createTask,
   getTaskUser,
   updateTask,

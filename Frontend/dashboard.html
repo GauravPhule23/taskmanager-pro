@@ -176,6 +176,7 @@
         const userPayload = parseJwt(token);
         const userRole = userPayload?.role || 'user'; 
 
+        // UPDATED: Fixed "htpps" typo
         const BASE_URL = 'https://taskmanager-pro-production.up.railway.app/api/v1/task';
         const FETCH_URL = userRole === 'admin' ? `${BASE_URL}/admin/all` : `${BASE_URL}/all`;
 
@@ -206,6 +207,7 @@
             }
         }
 
+        // UPDATED: Removed userRole checks so Admin sees edit/delete buttons
         function renderTasks(tasksToRender) {
             const list = document.getElementById('taskList');
             list.innerHTML = '';
@@ -228,7 +230,6 @@
                 let canDelete = true; 
 
                 // --- STATUS PRIORITY LOGIC ---
-                // 1. If inTime is explicitly false, it is FAILED
                 if (inTimeVal === false) {
                     statusText = 'Failed to complete';
                     statusColor = '#6c757d'; 
@@ -236,14 +237,12 @@
                     bgColor = '#f2f2f2'; 
                     canDelete = false;   
                 } 
-                // 2. If not failed, check if Completed
                 else if (isCompleted) {
                     statusText = 'Completed';
                     statusColor = '#28a745'; 
                     statusTextColor = 'white';
                     bgColor = 'white';
                 } 
-                // 3. Otherwise Pending
                 else {
                     statusText = 'Pending';
                     statusColor = '#ffc107'; 
@@ -255,7 +254,7 @@
                 div.className = 'task-item';
                 div.style.backgroundColor = bgColor; 
                 
-                // --- DISPLAY LOGIC FOR ADMIN ---
+                // --- DISPLAY LOGIC FOR ADMIN (User Details) ---
                 let adminUserInfo = '';
                 if (userRole === 'admin') {
                     const firstName = t.user?.firstName || 'Unknown';
@@ -280,19 +279,15 @@
                                 ${statusText}
                             </span>
                             <br><br>
-                            ${userRole !== 'admin' ? `
-                                <button onclick='openEditModal(${JSON.stringify(t).replace(/'/g, "&apos;")})' class="btn-edit">Edit</button>
-                            ` : ''}
+                            <button onclick='openEditModal(${JSON.stringify(t).replace(/'/g, "&apos;")})' class="btn-edit">Edit</button>
                         </div>
                     </div>
 
-                    ${userRole !== 'admin' ? `
-                        <button onclick="deleteTask('${t._id}')" 
-                                class="delete-btn" 
-                                ${!canDelete ? 'disabled style="background:grey; cursor:not-allowed; opacity:0.5;"' : ''}>
-                                Delete Task
-                        </button>
-                    ` : ''}
+                    <button onclick="deleteTask('${t._id}')" 
+                            class="delete-btn" 
+                            ${!canDelete ? 'disabled style="background:grey; cursor:not-allowed; opacity:0.5;"' : ''}>
+                            Delete Task
+                    </button>
                 `;
                 list.appendChild(div);
             });
