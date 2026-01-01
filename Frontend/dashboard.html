@@ -176,7 +176,7 @@
         const userPayload = parseJwt(token);
         const userRole = userPayload?.role || 'user'; 
 
-        const BASE_URL = 'htpps://taskmanager-pro-production.up.railway.app/api/v1/task';
+        const BASE_URL = 'https://taskmanager-pro-production.up.railway.app/api/v1/task';
         const FETCH_URL = userRole === 'admin' ? `${BASE_URL}/admin/all` : `${BASE_URL}/all`;
 
         document.getElementById('welcomeMsg').innerText = userRole === 'admin' ? 'Admin Dashboard' : 'My Tasks';
