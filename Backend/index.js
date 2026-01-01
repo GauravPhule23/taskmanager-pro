@@ -41,7 +41,7 @@ const TIME_INTERVAL = 5 * 60 * 60 * 1000;
 let cleanInt = null;
 
 conectionDatabase();
-let server = app.listen(3000, () => {
+let server = app.listen(process.env.PORT||3000, () => {
   Applog("Server Started")
   cleanTask();
   cleanInt = setInterval(cleanTask, TIME_INTERVAL);
