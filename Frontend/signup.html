@@ -59,10 +59,10 @@
             if (res.ok) {
                 // Check where the token is (based on your previous logs)
                 // Use data.token OR data.data (whichever one had the long string)
-                const finalToken = data.data; 
+                console.log(data.data)
 
-                if (finalToken) {
-                    localStorage.setItem('token', finalToken);
+                if (data.data) {
+                    localStorage.setItem('token', data.data);
                     console.log("Token saved. Redirecting now...");
                     
                     // ✅ Force the redirect
